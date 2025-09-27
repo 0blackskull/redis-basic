@@ -8,8 +8,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
 
     # b creates a bytes object
-    s.sendall(b"Hello from client")
+    s.send(b"1")
 
-    data = s.recv(1024)
+    while True:
+        data = s.recv(1024)
 
-print(f"Received: {data}")
+        if data == b"close":
+            break
+        
+        print(f"Received: {data}")
+
+    # data = s.recv(1024)

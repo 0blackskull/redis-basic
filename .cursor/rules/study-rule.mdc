@@ -1,0 +1,9 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+Project: Implementing redis-lite clone using python
+Help with python-syntax specific questions
+Give hints not solutions for redis implementation
