@@ -1,6 +1,7 @@
 import sys
 import selectors 
 import socket
+import types
 
 # HOST = "127.0.0.1" # Server's hostname or IP address
 # PORT = 65432 # The port used by the server
@@ -36,22 +37,22 @@ def accept_connection(sock):
     conn.setblocking(False)
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
     events = selectors.EVENT_WRITE | selectors.EVENT_READ
-    sel.register(conn, selectors.EVENT_WRITE, data=data)
+    sel.register(conn, events, data=data)
 
 """
 Process event from a connection socket
 """
 def service_connection(event):
-    mask = event.mask
-    conn = event.key.fileobj
-    data = event.key.data
+    key, mask = event
+    conn = key.fileobj
+    data = key.data
 
     # Ready for Read
     if mask & selectors.EVENT_READ:
         recv_data = conn.recv(1024)
 
         if recv_data:
-            data += recv_data
+            data.outb += recv_data
         else:
             print(f"Closing connection to addr: {data.addr}")
             # Cleanup
@@ -61,6 +62,7 @@ def service_connection(event):
     # Ready for write
     if mask & selectors.EVENT_WRITE:
         if data.outb:
+            print(f"Sending {data.outb!r} to {data.addr}")
             bytes_sent = conn.send(data.outb)
             data.outb = data.outb[bytes_sent:]
 
@@ -74,11 +76,12 @@ try:
         events = sel.select(timeout=None) # returns tuple list
 
         for event in events:
-
+            key, mask = event
             # Event from listening socket
-            if event.key.data is None:
+            # if event.key.data is None: # CANNOT ACCESS TUPLE LIKE THIS
+            if key.data is None:
                 # Accept new connection
-                accept_connection(event.key.fileobj) # The server side lsock we registered earlier
+                accept_connection(key.fileobj) # The server side lsock we registered earlier
             else:
                 # Event from connection socket
                 service_connection(event)
@@ -86,5 +89,9 @@ try:
 
 except KeyboardInterrupt:
     print("Caught keyboard interrupt, exiting")
+    sys.exit(1)
+# except Exception as e:
+#     print(f"Exiting due to: {e!r}")
+#     sys.exit(1)
 finally:
     sel.close()
